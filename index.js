@@ -3,7 +3,7 @@ const app = express();
 
 const cors = require("cors");
 require("dotenv").config();
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 5000;
 
 const { MongoClient } = require("mongodb");
 const objectId = require("mongodb").ObjectId;
@@ -48,39 +48,62 @@ async function run() {
     });
 
     app.get("/bookings", async (req, res) => {
-      const cursor = bookingsCollection.find({});
-      const count = await cursor.count();
-      const page = req.query.page;
-      const size = parseInt(req.query.size);
-      let bookings;
-      if (page) {
-        bookings = await cursor
-          .skip(page * size)
-          .limit(size)
-          .toArray();
+      let query = {};
+      const email = req.query.email;
+      if (email) {
+        const query = { email: email };
+        const cursor = bookingsCollection.find(query);
+        const orders = await cursor.toArray();
+        res.json(orders);
       } else {
-        bookings = await cursor.toArray();
+        const cursor = bookingsCollection.find({});
+        const orders = await cursor.toArray();
+        res.json(orders);
       }
-      res.send({
-        count,
-        bookings,
-      });
+
     });
 
     // Add BOOKINGS API
-    app.post('/bookings', async (req, res) => {
+    app.post("/bookings", async (req, res) => {
       const booking = req.body;
-      const result = await bookingsCollection.insertOne(booking)
-      res.json(result)
-  })
+      const result = await bookingsCollection.insertOne(booking);
+      res.json(result);
+    });
 
+    app.get("/orders/:email", async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const result = await bookingsCollection.find(filter).toArray();
+      res.send(result);
+    });
+
+    // cancel an order
+    app.delete("/orders/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await bookingsCollection.deleteOne(query);
+      res.json(result);
+    });
+
+    // app.get("/packages/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const cursor = await packagesCollection
+    //     .find({ _id: objectId(id) })
+    //     .toArray();
+    //   res.send(cursor);
+    // });
 
     app.get("/packages/:id", async (req, res) => {
       const id = req.params.id;
-      const cursor = await packagesCollection
-        .find({ _id: objectId(id) })
-        .toArray();
-      res.send(cursor);
+      const query = { _id: ObjectId(id) };
+      const packages = await packagesCollection.findOne(query);
+      res.json(packages);
+    });
+
+    app.post("/packages", async (req, res) => {
+      const packages = req.body;
+      const result = await packagesCollection.insertOne(packages);
+      res.json(result);
     });
   } finally {
     // await client.close();
