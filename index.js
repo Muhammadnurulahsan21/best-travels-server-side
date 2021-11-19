@@ -6,6 +6,7 @@ require("dotenv").config();
 const port = process.env.PORT || 4000;
 
 const { MongoClient } = require("mongodb");
+const objectId = require("mongodb").ObjectId;
 
 // Middleware
 app.use(cors());
@@ -22,6 +23,7 @@ async function run() {
     await client.connect();
     const database = client.db("best-travel");
     const packagesCollection = database.collection("packages");
+    const bookingsCollection = database.collection("bookings");
     console.log("Travel Database Connection Successful");
 
     // Get All PACKAGES Data
@@ -43,6 +45,42 @@ async function run() {
         count,
         packages,
       });
+    });
+
+    app.get("/bookings", async (req, res) => {
+      const cursor = bookingsCollection.find({});
+      const count = await cursor.count();
+      const page = req.query.page;
+      const size = parseInt(req.query.size);
+      let bookings;
+      if (page) {
+        bookings = await cursor
+          .skip(page * size)
+          .limit(size)
+          .toArray();
+      } else {
+        bookings = await cursor.toArray();
+      }
+      res.send({
+        count,
+        bookings,
+      });
+    });
+
+    // Add BOOKINGS API
+    app.post('/bookings', async (req, res) => {
+      const booking = req.body;
+      const result = await bookingsCollection.insertOne(booking)
+      res.json(result)
+  })
+
+
+    app.get("/packages/:id", async (req, res) => {
+      const id = req.params.id;
+      const cursor = await packagesCollection
+        .find({ _id: objectId(id) })
+        .toArray();
+      res.send(cursor);
     });
   } finally {
     // await client.close();
