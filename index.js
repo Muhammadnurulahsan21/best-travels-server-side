@@ -85,13 +85,7 @@ async function run() {
       res.json(result);
     });
 
-    // app.get("/packages/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const cursor = await packagesCollection
-    //     .find({ _id: objectId(id) })
-    //     .toArray();
-    //   res.send(cursor);
-    // });
+  
 
     app.get("/packages/:id", async (req, res) => {
       const id = req.params.id;
